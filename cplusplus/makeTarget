@@ -1,0 +1,20 @@
+#!/bin/bash
+
+export PATH=/home/emreyamangil/gridlabd/usr/bin:$PATH
+export LD_LIBRARY_PATH=/home/emreyamangil/gridlabd/usr/lib64/gridlabd:$LD_LIBRARY_PATH
+
+target="$1"
+#cplex_root="/opt/ibm/ILOG/CPLEX_Studio126"
+cplex_root="/projects/cplex"
+
+object_file="$target"
+object_file+=".o"
+source_file="$target"
+source_file+=".cpp"
+
+echo "$source_file"
+
+g++ -O0 -c -m64 -fPIC -fno-strict-aliasing -fopenmp -I$cplex_root/cplex/include -I$cplex_root/concert/include -Iboost_1_57_0 -DIL_STD $source_file -o $object_file
+
+g++ -O0 -m64 -fPIC -fno-strict-aliasing -fopenmp -I$cplex_root/cplex/include -I$cplex_root/concert/include -Iboost_1_57_0 -L$cplex_root/cplex/lib/x86-64_linux/static_pic -L$cplex_root/concert/lib/x86-64_linux/static_pic -o $target $object_file -lilocplex -lconcert -lcplex -lm -lpthread
+
