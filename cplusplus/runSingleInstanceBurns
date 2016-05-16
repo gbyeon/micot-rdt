@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+#SBATCH --job-name=B_job
+#SBATCH --output=B_log.txt
+#
+#SBATCH --ntasks=1
+#SBATCH --partition=ccs6
+#SBATCH --time=72:00:00
+
+srun ./testVNS_DistFlow_Damage "0.2" 50 1.0 0.9 200.0 Rural Experiment/burns/ HardenedEnabled Heuristic MCF 0 Output

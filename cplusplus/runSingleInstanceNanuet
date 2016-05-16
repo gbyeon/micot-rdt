@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+#SBATCH --job-name=N_job
+#SBATCH --output=N_log.txt
+#
+#SBATCH --ntasks=1
+#SBATCH --partition=ccs6
+#SBATCH --time=72:00:00
+
+srun ./testVNS_DistFlow_Damage "0.2" 50 1.0 0.98 100.0 Rural Experiment/nanuet/ HardenedEnabled Heuristic MCF 0 Output
