@@ -30,16 +30,16 @@ type nodeData
         n.id = id
         n.x = x
         n.y = y
-        n.EdgeInList = Int64[]
-        n.EdgeOutList = Int64[]
-        n.GeneratorList = Int64[]
-        n.LoadList = Int64[]
+        n.EdgeInList = Int64[] # derived from the edge data
+        n.EdgeOutList = Int64[] # derived from the edge data
+        n.GeneratorList = Int64[] # derived from the generator data
+        n.LoadList = Int64[] # derived from the load data
         n.minVoltage = minVoltage
         n.maxVoltage = maxVoltage
         n.refVoltage = refVoltage
         n.hasPhase = hasPhase
-        n.demand = demand
-        n.hasGenerator = hasGenerator
+        n.demand = demand # derived from the load data
+        n.hasGenerator = hasGenerator 
         return n
     end
 end
