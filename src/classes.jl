@@ -260,4 +260,17 @@ type ORDGDP
  
 end
 
-
+function loadProblemData(p::problemData)
+    # LOAD PROBLEM DATA HERE TO FIELDS OF p
+    data = JSON.parsefile("micot-rdt-data.json", dicttype=Dict, use_mmap=true)
+    for (k, v) in data
+        if data[k] == "buses"
+            # LOAD p.NODES a new nodeData
+            # add a new entry to hashTableVertex
+        else if data[k] == "edges"
+            # ...
+        else
+            # ...
+        end
+    end
+end

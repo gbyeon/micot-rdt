@@ -1,4 +1,5 @@
 using FactCheck
+using JSON
 
 @everywhere using JuMP
 @everywhere using CPLEX
