@@ -468,12 +468,11 @@ function loadProblemDataJSONDict(p::problemData, data::Dict)
 
   # Need to map (or add) the fields below to the fields above
   
-  #private static final String CRITICAL_LOAD_MET_TAG = "critical_load_met";
- # private static final String TOTAL_LOAD_MET_TAG = "total_load_met";
- # private static final String CHANCE_CONSTRAINT_TAG = "chance_constraint";
- # private static final String PHASE_VARIATION_TAG = "phase_variation";
-  
-  
+  critical_load_met = data["critical_load_met"] # percentage of critical load met
+  total_load_met = data["total_load_met"] # percenate of total load met
+  chance_constraint = data["chance_constraint"] # chance constraint, for when we choose to add that back in
+  phase_variation = data["phase_variation"] # for the phase variation at transformer constraint
+        
   
     # Damage data TODO this does not seem the be the right data structures?  Vector of vectors?
   #  DISABLED::Vector{dataNode}
