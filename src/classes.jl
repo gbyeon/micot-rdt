@@ -160,7 +160,7 @@ type problemData
     DISABLED::Vector{dataNode}
     HARDENED_DISABLED::Vector{dataNode}
 
-    function problemData()
+    function problemData(filename::AbstractString)
         p = new()
 
         p.numPhases = 3
@@ -195,7 +195,7 @@ type problemData
         p.DISABLED = dataNode[]
         p.HARDENED_DISABLED = dataNode[]
 
-        loadProblemData(p)
+        loadProblemData(p, filename)
         return p
     end
 end
@@ -260,4 +260,17 @@ type ORDGDP
  
 end
 
-
+function loadProblemData(p::problemData, filename::AbstractString)
+    # LOAD PROBLEM DATA HERE TO FIELDS OF p
+    data = JSON.parsefile(filename, dicttype=Dict, use_mmap=true)
+    for (k, v) in data
+        if data[k] == "buses"
+            # LOAD p.NODES a new nodeData
+            # add a new entry to hashTableVertex
+        else if data[k] == "edges"
+            # ...
+        else
+            # ...
+        end
+    end
+end

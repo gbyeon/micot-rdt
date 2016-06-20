@@ -1,4 +1,5 @@
 using FactCheck
+using JSON
 
 @everywhere using JuMP
 @everywhere using CPLEX
@@ -88,7 +89,7 @@ end
 
 function solveORDGDP()
 
-    problem_data = problemData()
+    problem_data = problemData("micot-rdt-data.json")
     ordgdp = ORDGDP(mip_solver, problem_data, 0)
 
     master_ordgdp = generateScenario([], false, Any[], 0)
