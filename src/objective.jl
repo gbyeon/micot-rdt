@@ -49,7 +49,7 @@ function populateInfeasibilityMinimization(ordgdp::ORDGDP)
         @addConstraint(mip_model, sum{loadReactiveVariable[j,k], j in 1:numLoads} + infTotalReactiveVariable[k] >= p.TotalReactiveDemand[k])
     end
 
-    @setObjective(mip_model, Min, sum{infCriticalRealVariable[k] + infCriticalReactiveVariable[k] + infTotalRealVariable[k] + infTotalReactiveVariable[k], k in 1:numPhases})
+    @objective(mip_model, Min, sum{infCriticalRealVariable[k] + infCriticalReactiveVariable[k] + infTotalRealVariable[k] + infTotalReactiveVariable[k], k in 1:numPhases})
 
 end
 
@@ -114,7 +114,7 @@ function populateMinimization(ordgdp::ORDGDP)
         FACILITY_COST[idx] += p.MICROGRID_FIXED_COST[j].data
     end
 
-    @setObjective(mip_model, Min, 
+    @objective(mip_model, Min, 
         sum{p.LINE_CONSTRUCTION_COST[j].data * lineUseVariable[p.hashTableEdges[p.LINE_CONSTRUCTION_COST[j].id]], j in 1:length(LINE_CONSTRUCTION_COST)} +
         sum{p.LINE_SWITCH_COST[j].data * switchUseVariable[p.hashTableEdges[p.LINE_SWITCH_COST[j].id]], j in 1:length(LINE_SWITCH_COST)} +
         sum{p.HARDEN_COST[j].data * lineHardenVariable[p.hashTableEdges[p.HARDEN_COST[j].id]], j in 1:length(HARDEN_COST)} +

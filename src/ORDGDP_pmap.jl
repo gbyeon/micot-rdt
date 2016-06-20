@@ -12,6 +12,7 @@ include("objective.jl")
 include("variables.jl")
 include("constraints.jl")
 
+# Why is this a global variable.  TODO
 mip_solver = CplexSolver()
 
 # // -- GENERATE SCENARIO scen_idx ----------------------------
@@ -87,9 +88,9 @@ function master_solver(master_model, master_solution, master_var)
     return VariableNeighborhoodSearch(master_model, master_solution, lp_relaxation, master_var, Any[], Any[], 3600.0)
 end
 
-function solveORDGDP()
+function solveORDGDP(filename::AbstractString)
 
-    problem_data = problemData("micot-rdt-data.json")
+    problem_data = problemData(filename)
     ordgdp = ORDGDP(mip_solver, problem_data, 0)
 
     master_ordgdp = generateScenario([], false, Any[], 0)
