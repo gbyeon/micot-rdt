@@ -505,7 +505,9 @@ function loadProblemDataJSONDict(p::problemData, data::Dict)
   for i in 1:length(p.EDGES)
     idx1 = p.hashTableVertex[p.EDGES[i].node1id]
     idx2 = p.hashTableVertex[p.EDGES[i].node2id]
+    # Undirected graph
     addEdge(G, idx1, idx2)
+    addEdge(G, idx2, idx1)
   end
   p.CYCLES = OrderedSet{Int64}[]
 
