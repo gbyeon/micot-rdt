@@ -135,8 +135,10 @@ end
 
 type problemData
     # DATA
+    numScen::Int64
+
     # Power flow data
-    numPhases::Int64    
+    numPhases::Int64 
 
     # Graph data
     NODES::Vector{nodeData}
@@ -170,12 +172,14 @@ type problemData
     TotalReactiveDemand::Float64
 
     # Damage data
-    DISABLED::Vector{dataNode}
-    HARDENED_DISABLED::Vector{dataNode}
+    DISABLED::Vector{Vector{dataNode}}
+    HARDENED_DISABLED::Vector{Vector{dataNode}}
 
     # Constructor  TODO assumes the string is a filename. May want to make this abstract since it could just be a piped string
     function problemData(filename::AbstractString)
         p = new()
+
+        p.numScen = 100
 
         p.numPhases = 3
 
@@ -206,8 +210,12 @@ type problemData
         p.TotalRealDemand = 0.0
         p.TotalReactiveDemand = 0.0
 
-        p.DISABLED = dataNode[]
-        p.HARDENED_DISABLED = dataNode[]
+        p.DISABLED = Array(Vector{dataNode}, p.numScen)
+        p.HARDENED_DISABLED = Array(Vector{dataNode}, p.numScen)
+        for i in 1:p.numScen
+            p.DISABLED[i] = dataNode[]
+            p.HARDENED_DISABLED[i] = dataNode[]
+        end
 
         loadProblemDataFile(p, filename)
         return p
@@ -475,7 +483,34 @@ function loadProblemDataJSONDict(p::problemData, data::Dict)
         
   
     # Damage data TODO this does not seem the be the right data structures?  Vector of vectors?
-  #  DISABLED::Vector{dataNode}
-  #  HARDENED_DISABLED::Vector{dataNode}
-  
+  probDamage = 0.2
+  for k in 1:p.numScen
+    for i in 1:length(p.EDGES)
+      for j in p.EDGES[i].numPoles
+        dice = rand()
+        if dice < probDamage
+          push!(DISABLED[k], dataNode(p.EDGES[i].id, true))
+        else
+          push!(DISABLED[k], dataNode(p.EDGES[i].id, false))
+       end 
+       push!(HARDENED_DISABLED[k], dataNode(p.EDGES[i].id, false))
+     end
+  end
+
+  # DETECT CYCLES
+  G = Graph()
+  for i in 1:length(p.NODES)
+    addVertex(G, i)
+  end
+  for i in 1:length(p.EDGES)
+    idx1 = p.hashTableVertex[p.EDGES[i].node1id]
+    idx2 = p.hashTableVertex[p.EDGES[i].node2id]
+    # Undirected graph
+    addEdge(G, idx1, idx2)
+    addEdge(G, idx2, idx1)
+  end
+  p.CYCLES = OrderedSet{Int64}[]
+
+  detectCycles(G, p.CYCLES)
+
 end
