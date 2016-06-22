@@ -52,16 +52,16 @@ function generate3Knapsack(master_object, fixVals, master_var, scen_id)
     sub_solution = Any[]
 
     println("POPULATING SCENARIO $scen_id")
-    @defVar(curr_model, x[1:3], Bin)
+    @variable(curr_model, x[1:3], Bin)
     if master_object == []
         println("STARTED SCENARIO $scen_id")
         if fixVals
             fixSolution(x, master_var[1])
-            @defVar(curr_model, inf_var >= 0)
-            @addConstraint(curr_model, vecdot(a, x) + inf_var >= b)
+            @variable(curr_model, inf_var >= 0)
+            @constraint(curr_model, vecdot(a, x) + inf_var >= b)
             @setObjective(curr_model, Min, inf_var)
         else
-            @addConstraint(curr_model, vecdot(a, x) >= b)
+            @constraint(curr_model, vecdot(a, x) >= b)
             @setObjective(curr_model, Min, vecdot(c, x))
         end
         println("SOLVING SCENARIO $scen_id")
@@ -75,9 +75,9 @@ function generate3Knapsack(master_object, fixVals, master_var, scen_id)
         println("process id $(myid()) took $(time()-start) seconds.")
         return getObjectiveValue(curr_model), curr_solution
     else
-        @addConstraint(curr_model, vecdot(a, x) >= b)
+        @constraint(curr_model, vecdot(a, x) >= b)
         for j = 1:3
-            @addConstraint(curr_model, master_var[1][j] >= x[j])
+            @constraint(curr_model, master_var[1][j] >= x[j])
         end
     end
 end
@@ -88,7 +88,7 @@ function generateMaster()
     master_var = Any[]
     master_model = Model(solver=CplexSolver()) 
     c = [2,3,1]
-    @defVar(master_model, x[1:3], Bin)
+    @variable(master_model, x[1:3], Bin)
     @setObjective(master_model, Min, vecdot(c, x))
     push!(master_var, x)
     return master_model, master_var 

@@ -28,11 +28,11 @@ function populateInfeasibilityMinimization(ordgdp::ORDGDP)
     loadServeVariable = ordgdp.loadServeVariable
     facilityVariable = ordgdp.facilityVariable
  
-    @defVar(mip_model, infCriticalRealVariable[1:numPhases] >= 0)
-    @defVar(mip_model, infCriticalReactiveVariable[1:numPhases] >= 0)
+    @variable(mip_model, infCriticalRealVariable[1:numPhases] >= 0)
+    @variable(mip_model, infCriticalReactiveVariable[1:numPhases] >= 0)
 
-    @defVar(mip_model, infTotalRealVariable[1:numPhases] >= 0)
-    @defVar(mip_model, infTotalReactiveVariable[1:numPhases] >= 0)
+    @variable(mip_model, infTotalRealVariable[1:numPhases] >= 0)
+    @variable(mip_model, infTotalReactiveVariable[1:numPhases] >= 0)
 
     CriticalLoadList = Int64[]
     for j = 1:length(p.IS_CRITICAL_LOAD)
@@ -42,11 +42,11 @@ function populateInfeasibilityMinimization(ordgdp::ORDGDP)
         end
     end
     for k = 1:numPhases
-        @addConstraint(mip_model, sum{loadRealVariable[j,k], j in CriticalLoadList} + infCriticalRealVariable[k] >= p.CriticalRealDemand[k])
-        @addConstraint(mip_model, sum{loadReactiveVariable[j,k], j in CriticalLoadList} + infCriticalReactiveVariable[k] >= p.CriticalReactiveDemand[k])
+        @constraint(mip_model, sum{loadRealVariable[j,k], j in CriticalLoadList} + infCriticalRealVariable[k] >= p.CriticalRealDemand[k])
+        @constraint(mip_model, sum{loadReactiveVariable[j,k], j in CriticalLoadList} + infCriticalReactiveVariable[k] >= p.CriticalReactiveDemand[k])
 
-        @addConstraint(mip_model, sum{loadRealVariable[j,k], j in 1:numLoads} + infTotalRealVariable[k] >= p.TotalRealDemand[k])
-        @addConstraint(mip_model, sum{loadReactiveVariable[j,k], j in 1:numLoads} + infTotalReactiveVariable[k] >= p.TotalReactiveDemand[k])
+        @constraint(mip_model, sum{loadRealVariable[j,k], j in 1:numLoads} + infTotalRealVariable[k] >= p.TotalRealDemand[k])
+        @constraint(mip_model, sum{loadReactiveVariable[j,k], j in 1:numLoads} + infTotalReactiveVariable[k] >= p.TotalReactiveDemand[k])
     end
 
     @objective(mip_model, Min, sum{infCriticalRealVariable[k] + infCriticalReactiveVariable[k] + infTotalRealVariable[k] + infTotalReactiveVariable[k], k in 1:numPhases})
@@ -91,11 +91,11 @@ function populateMinimization(ordgdp::ORDGDP)
         end
     end
     for k = 1:numPhases
-        @addConstraint(mip_model, sum{loadRealVariable[j,k], j in CriticalLoadList} >= p.CriticalRealDemand[k])
-        @addConstraint(mip_model, sum{loadReactiveVariable[j,k], j in CriticalLoadList} >= p.CriticalReactiveDemand[k])
+        @constraint(mip_model, sum{loadRealVariable[j,k], j in CriticalLoadList} >= p.CriticalRealDemand[k])
+        @constraint(mip_model, sum{loadReactiveVariable[j,k], j in CriticalLoadList} >= p.CriticalReactiveDemand[k])
 
-        @addConstraint(mip_model, sum{loadRealVariable[j,k], j in 1:numLoads} >= p.TotalRealDemand[k])
-        @addConstraint(mip_model, sum{loadReactiveVariable[j,k], j in 1:numLoads} >= p.TotalReactiveDemand[k])
+        @constraint(mip_model, sum{loadRealVariable[j,k], j in 1:numLoads} >= p.TotalRealDemand[k])
+        @constraint(mip_model, sum{loadReactiveVariable[j,k], j in 1:numLoads} >= p.TotalReactiveDemand[k])
     end
 
     maxAdded = zeros(Float64, numGenerators)

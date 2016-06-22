@@ -1,5 +1,8 @@
 # // -- ORDGDP CLASSES ---------------------------------
 
+include("detect_cycles.jl")
+
+# A simple struct for associating data with an identifier
 type dataNode
     id::AbstractString
     data
@@ -11,10 +14,9 @@ type dataNode
     end
 end
 
+# A struct containing node level information
 type nodeData
     id::AbstractString
-    x::Float64
-    y::Float64
     EdgeInList::Vector{Int64}
     EdgeOutList::Vector{Int64}
     GeneratorList::Vector{Int64}
@@ -25,11 +27,9 @@ type nodeData
     hasPhase::Vector{Bool}
     demand::Vector{Float64}
     hasGenerator::Bool
-    function nodeData(id::AbstractString, x::Float64, y::Float64, minVoltage::Float64, maxVoltage::Float64, refVoltage::Float64, hasPhase::Vector{Bool}, demand::Vector{Float64}, hasGenerator::Bool)
+    function nodeData(id::AbstractString, minVoltage::Float64, maxVoltage::Float64, refVoltage::Float64, hasPhase::Vector{Bool}, demand::Vector{Float64}, hasGenerator::Bool)
         n = new()
         n.id = id
-        n.x = x
-        n.y = y
         n.EdgeInList = Int64[] # derived from the edge data
         n.EdgeOutList = Int64[] # derived from the edge data
         n.GeneratorList = Int64[] # derived from the generator data
@@ -38,12 +38,13 @@ type nodeData
         n.maxVoltage = maxVoltage
         n.refVoltage = refVoltage
         n.hasPhase = hasPhase
-        n.demand = demand # derived from the load data
+        n.demand = demand # derived from the load data, Emre what should go here
         n.hasGenerator = hasGenerator 
         return n
     end
 end
 
+# A struct containing information about generator data
 type generatorData
     id::AbstractString
     node_id::AbstractString
@@ -52,7 +53,7 @@ type generatorData
     maxReactivePhase::Vector{Float64}
     isNew::Bool
     
-    function generatorData(id, node_id, hasPhase, maxRealPhase, maxReactivePhase, isNew)
+  function generatorData(id::AbstractString, node_id::AbstractString, hasPhase::Vector{Bool}, maxRealPhase::Vector{Float64}, maxReactivePhase::Vector{Float64}, isNew::Bool)
         g = new()
         g.id = id
         g.node_id = node_id
@@ -64,6 +65,7 @@ type generatorData
     end
 end
 
+#A struct containing information about load level data
 type loadData
     id::AbstractString
     node_id::AbstractString
@@ -81,6 +83,7 @@ type loadData
     end   
 end
 
+# A struct containing information about edge level data
 type edgeData
     id::AbstractString
     node1id::AbstractString
@@ -91,14 +94,13 @@ type edgeData
     numPhases::Float64
     isTransformer::Bool
     lineCode::AbstractString
-    numPoles::Int64
     isNew::Bool # whether or not this is a new line
     hasSwitch::Bool # whether or this line already has a switch 
     canHarden::Bool # whether or not we can harden this line
     canAddSwitch::Bool # whether or not we can add a switch here
 
     # Constructor    
-    function edgeData(id, node1id, node2id, hasPhase, capacity, length, numPhases, isTransformer, lineCode, numPoles, isNew, hasSwitch, canHarden, canAddSwitch)
+    function edgeData(id::AbstractString, node1id::AbstractString, node2id::AbstractString, hasPhase::Vector{Bool}, capacity::Float64, length::Float64, numPhases::Int64, isTransformer::Bool, lineCode::AbstractString, isNew::Bool, hasSwitch::Bool, canHarden::Bool, canAddSwitch::Bool)
         e = new()
         e.id = id
         e.node1id = node1id
@@ -109,7 +111,6 @@ type edgeData
         e.numPhases = numPhases
         e.isTransformer = isTransformer
         e.lineCode = lineCode
-        e.numPoles = numPoles
         e.isNew = isNew
         e.hasSwitch = hasSwitch
         e.canHarden = canHarden
@@ -118,12 +119,13 @@ type edgeData
     end
 end
 
+# A struct containing information abouit line codes
 type lineCodeData
     lineCode::AbstractString
     numPhases::Int64
     rmatrix
     xmatrix
-    function lineCodeData(lineCode, numPhases, rmatrix, xmatrix)
+    function lineCodeData(lineCode::AbstractString, numPhases::Int64, rmatrix, xmatrix)
         l = new()
         l.lineCode = lineCode
         l.numPhases = numPhases
@@ -133,9 +135,26 @@ type lineCodeData
     end 
 end
 
+# a simple structure for scenario data
+type scenarioData
+  id::AbstractString
+  disabled_edges::Dict{AbstractString,Bool}
+  harden_disabled_edges::Dict{AbstractString,Bool}
+
+  function scenarioData(id::AbstractString)
+    s = new()
+    s.id = id
+    s.disabled_edges = Dict{AbstractString, Bool}()
+    s.harden_disabled_edges = Dict{AbstractString, Bool}()    
+    return s
+  end
+end
+  
+# A struct containing all the problem information
 type problemData
     # DATA
-    numScen::Int64
+    phaseVariation::Float64
+    chanceConstraint::Float64
 
     # Power flow data
     numPhases::Int64 
@@ -171,23 +190,23 @@ type problemData
     TotalRealDemand::Float64
     TotalReactiveDemand::Float64
 
-    # Damage data
-    DISABLED::Vector{Vector{dataNode}}
-    HARDENED_DISABLED::Vector{Vector{dataNode}}
-
+    # Scenario data
+    SCENARIOS::Vector{scenarioData}
+    
     # Constructor  TODO assumes the string is a filename. May want to make this abstract since it could just be a piped string
     function problemData(filename::AbstractString)
         p = new()
 
-        p.numScen = 100
-
         p.numPhases = 3
+        p.phaseVariation = .15;
+        p.chanceConstraint = 1.0;
 
         p.NODES = nodeData[]
         p.EDGES = edgeData[]
         p.GENERATORS = generatorData[]
         p.LOADS = loadData[]
         p.LINECODES = lineCodeData[]
+        p.SCENARIOS = scenarioData[]  
         p.CYCLES = Vector{Int64}[]
 
         p.hashTableNodes = Dict{AbstractString, Int64}()
@@ -210,12 +229,6 @@ type problemData
         p.TotalRealDemand = 0.0
         p.TotalReactiveDemand = 0.0
 
-        p.DISABLED = Array(Vector{dataNode}, p.numScen)
-        p.HARDENED_DISABLED = Array(Vector{dataNode}, p.numScen)
-        for i in 1:p.numScen
-            p.DISABLED[i] = dataNode[]
-            p.HARDENED_DISABLED[i] = dataNode[]
-        end
 
         loadProblemDataFile(p, filename)
         return p
@@ -298,25 +311,27 @@ end
 
 # This function takes as input the problem data (which the function will fill) and
 # a data dictionary with all the information we need
-# TODO Have checks to see if data exists, and fill in defaults if it is not included... see the schema for the defaults
 function loadProblemDataJSONDict(p::problemData, data::Dict)
 
   # load the the bus level data
   buses = data["buses"]
   for bus in buses
     id = bus["id"]
-    x = bus["x"]  # TODO Emre is this field necessary?
-    y = bus["y"] # TODO Emre is this field necessary?
-    min_voltage = bus["min_voltage"]
-    max_voltage = bus["max_voltage"]
-    ref_voltage = bus["ref_voltage"]
-    has_phase = [bus["has_phase"][1],bus["has_phase"][2],bus["has_phase"][3]] 
+    min_voltage = haskey(bus,"min_voltage") ? bus["min_voltage"] : 0.8
+    max_voltage = haskey(bus,"max_voltage") ? bus["max_voltage"] : 1.2
+    ref_voltage = haskey(bus,"ref_voltage") ? bus["ref_voltage"] : 1.0
+    has_phase = haskey(bus,"has_phase") ? [bus["has_phase"][1],bus["has_phase"][2],bus["has_phase"][3]] : [true, true, true]
     demand = [0.0,0.0,0.0] # TODO Emre, not sure about this field?  Demand is real and reactive.      
-    has_generator =  bus["has_generator"]
-    node = nodeData(id, x, y, min_voltage, max_voltage, ref_voltage, has_phase, demand, has_generator)
+    has_generator =  haskey(bus,"has_generator") ? bus["has_generator"] : false
+    node = nodeData(id, min_voltage, max_voltage, ref_voltage, has_phase, demand, has_generator)
     push!(p.NODES,node) 
     p.hashTableNodes[id] = length(p.NODES)
   end
+  
+  totalReal = 0
+  totalReactive = 0
+  totalCriticalReal = 0
+  totalCriticalReactive = 0
     
   # grab the load data
   loads = data["loads"]
@@ -326,10 +341,7 @@ function loadProblemDataJSONDict(p::problemData, data::Dict)
     has_phase = [load["has_phase"][1],load["has_phase"][2],load["has_phase"][3]]
     max_real_phase =  [load["max_real_phase"][1],load["max_real_phase"][2],load["max_real_phase"][3]]    
     max_reactive_phase =  [load["max_reactive_phase"][1],load["max_reactive_phase"][2],load["max_reactive_phase"][3]]   
-    is_critical = false;
-    if haskey(load, "is_critical")
-      is_critical = load["is_critical"]
-    end  
+    is_critical = haskey(load, "is_critical") ? load["is_critical"] : false;
        
     l = loadData(id, node_id, has_phase, max_real_phase, max_reactive_phase)
     push!(p.LOADS,l) 
@@ -339,6 +351,15 @@ function loadProblemDataJSONDict(p::problemData, data::Dict)
     p.NODES[node_idx].demand = p.NODES[node_idx].demand + max_real_phase # TODO, is this what should be stored there?  
 
     push!(p.IS_CRITICAL_LOAD, dataNode(id, is_critical)) # TODO why not make this a member variable of edgeData?
+
+    if is_critical
+      totalCriticalReal = totalCriticalReal + max_real_phase[1] + max_real_phase[2] + max_real_phase[3] 
+      totalCriticalRective = totalCriticalReactive + max_reactive_phase[1] + max_reactive_phase[2] + max_reactive_phase[3]      
+   else 
+      totalReal = totalReal + max_real_phase[1] + max_real_phase[2] + max_real_phase[3] 
+      totalRective = totalReactive + max_reactive_phase[1] + max_reactive_phase[2] + max_reactive_phase[3]          
+    end
+    
   end
 
   # grab the generator data
@@ -346,31 +367,14 @@ function loadProblemDataJSONDict(p::problemData, data::Dict)
   for gen in gens
     id = gen["id"]
     node_id = gen["node_id"]
-    has_phase = [gen["has_phase"][1],gen["has_phase"][2],gen["has_phase"][3]] 
-    max_real_phase = [gen["max_real_phase"][1],gen["max_real_phase"][2],gen["max_real_phase"][3]]    
-    max_reactive_phase = [gen["max_reactive_phase"][1],gen["max_reactive_phase"][2],gen["max_reactive_phase"][3]]           
-    
-    microgrid_cost = Inf
-    if (haskey(gen, "microgrid_cost"))
-      microgrid_cost = gen["microgrid_cost"]
-    end
-    
-    microgrid_fixed_cost = Inf
-    if (haskey(gen, "microgrid_fixed_cost"))
-      microgrid_fixed_cost = gen["microgrid_fixed_cost"]
-    end
-    
-    max_microgrid = 0
-    if (haskey(gen, "max_micro_grid"))
-      max_microgrid = gen["max_micro_grid"]
-    end
-    
-    is_new = false    
-    if (haskey(gen, "is_new"))
-      is_new = gen["is_new"]
-    end
-      
-      
+    has_phase = haskey(gen,"has_phase") ? [gen["has_phase"][1],gen["has_phase"][2],gen["has_phase"][3]] : [true, true, true] 
+    max_real_phase = haskey(gen,"max_real_phase") ? [gen["max_real_phase"][1],gen["max_real_phase"][2],gen["max_real_phase"][3]] : [Inf, Inf, Inf]   
+    max_reactive_phase = haskey(gen,"max_reactive_phase") ? [gen["max_reactive_phase"][1],gen["max_reactive_phase"][2],gen["max_reactive_phase"][3]] : [Inf, Inf, Inf]              
+    microgrid_cost = haskey(gen, "microgrid_cost") ? gen["microgrid_cost"] : Inf    
+    microgrid_fixed_cost = haskey(gen, "microgrid_fixed_cost") ? gen["microgrid_fixed_cost"] : Inf    
+    max_microgrid = haskey(gen, "max_micro_grid") ? gen["max_micro_grid"] : 0    
+    is_new = haskey(gen, "is_new") ? gen["is_new"] : false    
+            
     g = generatorData(id, node_id, has_phase, max_real_phase, max_reactive_phase, is_new)
     push!(p.GENERATORS,g) 
     p.hashTableGenerators[id] = length(p.GENERATORS) 
@@ -390,45 +394,20 @@ function loadProblemDataJSONDict(p::problemData, data::Dict)
     node1id = edge["node1_id"]
     node2id = edge["node2_id"]
     has_phase = [edge["has_phase"][1],edge["has_phase"][2],edge["has_phase"][3]] 
-    capacity = edge["capacity"]
-    len = edge["length"]
-    num_phases = edge["num_phases"]
-    is_transformer = edge["is_transformer"]
+    capacity = haskey(edge, "capacity") ? edge["capacity"] : Inf
+    len = haskey(edge, "length") ? edge["length"] : 1.0
+    num_phases = haskey(edge, "num_phases") ? edge["num_phases"] : 3
+    is_transformer = haskey(edge, "is_transformer") ? edge["is_transformer"] : false
     line_code = edge["line_code"]
-    num_poles = edge["num_poles"] # TODO is this needed?
-    construction_cost = edge["construction_cost"]
-    
-    harden_cost = Inf
-    if (haskey(edge, "harden_cost"))
-      harden_cost = edge["harden_cost"]         
-    end
- 
-    switch_cost = Inf
-    if (haskey(edge, "switch_cost"))
-      harden_cost = edge["switch_cost"]         
-    end
-    
-    is_new = false
-    if (haskey(edge, "is_new"))
-      is_new = edge["is_new"]         
-    end
-      
-    has_switch = false
-    if (haskey(edge, "has_switch"))
-      has_switch = edge["has_switch"]         
-    end
-    
-    can_harden = false
-    if (haskey(edge, "can_harden"))
-      can_harden = edge["can_harden"]         
-    end
-    
-    can_add_switch = false
-    if (haskey(edge, "can_add_switch"))
-      can_add_switch = edge["can_add_switch"]         
-    end
+    construction_cost = haskey(edge,"construction_cost") ? edge["construction_cost"] : Inf    
+    harden_cost = haskey(edge, "harden_cost") ? edge["harden_cost"] : Inf 
+    switch_cost = haskey(edge, "switch_cost") ? edge["switch_cost"] : Inf    
+    is_new = haskey(edge, "is_new") ? edge["is_new"] : false      
+    has_switch = haskey(edge, "has_switch") ? edge["has_switch"] : false    
+    can_harden = haskey(edge, "can_harden") ? edge["can_harden"] : false    
+    can_add_switch = haskey(edge, "can_add_switch") ? edge["can_add_switch"] : false
               
-    e = edgeData(id, node1id, node2id, has_phase, capacity, len, num_phases, is_transformer, line_code, num_poles, is_new, has_switch, can_harden, can_add_switch)
+    e = edgeData(id, node1id, node2id, has_phase, capacity, len, num_phases, is_transformer, line_code, is_new, has_switch, can_harden, can_add_switch)
   
     push!(p.EDGES,e) 
     p.hashTableEdges[id] = length(p.EDGES) 
@@ -460,57 +439,54 @@ function loadProblemDataJSONDict(p::problemData, data::Dict)
     push!(p.LINECODES,lc) 
     p.hashTableLineCodes[id] = length(p.LINECODES)     
   end  
-    
-  
-       
-    
-  # Still need to hook up these things
-  #   CYCLES  TODO how/when should this be populated?
-  #   hashTableUniqueEdges::Dict{AbstractString,Int64}  TODO, how/when should this be populated
-    
-    # Demand data
-  #  CriticalRealDemand::Float64
-  #  CriticalReactiveDemand::Float64
-  #  TotalRealDemand::Float64
-  #  TotalReactiveDemand::Float64
-
-  # Need to map (or add) the fields below to the fields above
-  
-  critical_load_met = data["critical_load_met"] # percentage of critical load met
-  total_load_met = data["total_load_met"] # percenate of total load met
-  chance_constraint = data["chance_constraint"] # chance constraint, for when we choose to add that back in
-  phase_variation = data["phase_variation"] # for the phase variation at transformer constraint
         
+  # percentage of critical load met
+  critical_load_met = haskey(data,"critical_load_met") ? data["critical_load_met"]  : 0.98
   
-    # Damage data TODO this does not seem the be the right data structures?  Vector of vectors?
-  probDamage = 0.2
-  for k in 1:p.numScen
-    for i in 1:length(p.EDGES)
-      for j in p.EDGES[i].numPoles
-        dice = rand()
-        if dice < probDamage
-          push!(DISABLED[k], dataNode(p.EDGES[i].id, true))
-        else
-          push!(DISABLED[k], dataNode(p.EDGES[i].id, false))
-       end 
-       push!(HARDENED_DISABLED[k], dataNode(p.EDGES[i].id, false))
-     end
+  # percentage of total load met
+  total_load_met = haskey(data,"total_load_met") ? data["total_load_met"] : 0.5
+    
+  p.CriticalRealDemand = totalCriticalReal * critical_load_met    
+  p.CriticalReactiveDemand = totalCriticalReactive * critical_load_met    
+  p.TotalRealDemand = totalReal * total_load_met    
+  p.TotalReactiveDemand = totalReactive * total_load_met      
+  p.chanceConstraint = haskey(data,"chance_constraint") ? data["chance_constraint"] : 1.0
+  p.phaseVariation = haskey(data,"phase_variation") ? data["phase_variation"] : 0.15
+        
+  # Grab the scenarios
+  scenarios = data["scenarios"]
+  for scenario in scenarios
+    id = scenario["id"]
+    sd = scenarioData(id)
+    disabled_lines = scenario["disabled_lines"]
+    harden_disabled_lines = scenario["hardened_disabled_lines"]  
+    
+    for disabled in disabled_lines
+      sd.disabled_edges[disabled] = true
+    end  
+   
+    for harden_disabled in harden_disabled_lines
+      sd.harden_disabled_edges[harden_disabled] = true      
+    end  
+          
+    push!(p.SCENARIOS,sd)
   end
-
+    
   # DETECT CYCLES
   G = Graph()
   for i in 1:length(p.NODES)
     addVertex(G, i)
   end
   for i in 1:length(p.EDGES)
-    idx1 = p.hashTableVertex[p.EDGES[i].node1id]
-    idx2 = p.hashTableVertex[p.EDGES[i].node2id]
+    idx1 = p.hashTableNodes[p.EDGES[i].node1id]
+    idx2 = p.hashTableNodes[p.EDGES[i].node2id]
     # Undirected graph
     addEdge(G, idx1, idx2)
     addEdge(G, idx2, idx1)
   end
   p.CYCLES = OrderedSet{Int64}[]
-
+  println("Finished creating graph")
   detectCycles(G, p.CYCLES)
-
+  println("Finished detect cycles")
+  
 end

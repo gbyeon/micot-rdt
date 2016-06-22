@@ -98,8 +98,7 @@ function populateConstraints(ordgdp::ORDGDP, p::problemData, scen_idx::Int64)
         @constraint(mip_model, lineExistsVariable[j] == lineDirectionVariableForward[j] + lineDirectionVariableBackward[j]) 
     end 
 
-    # TODO Get it from problem_data
-    PhaseVariation = 0.15
+    PhaseVariation = p.phase_variation 
     # PHASE VARIATION CONSTRAINT
     for j = 1:numEdges
         if p.EDGES[j].numPhases > 1 && p.EDGES[j].isTransformer
@@ -114,15 +113,30 @@ function populateConstraints(ordgdp::ORDGDP, p::problemData, scen_idx::Int64)
     end
 
     # EVERYDAY OPERATION = NO DAMAGE
+    # EMRE, should this be != 0?????    
     if scen_idx == 0
-        # HARDEN CONSTRAINT
+        # HARDEN CONSTRAINT        
+        # seem right EMRE???
         for j = 1:numEdges
-            if p.HARDENED_DISABLED[j].data
-                @constraint(mip_model, lineHardenVariable[j] <= 0.0)
-            else
-                @constraint(mip_model, lineHardenVariable[j] <= 1.0)
-            end
+          edgeid = p.EDGES[j].id
+          is_harden_disable = false
+          if haskey(p.SCENARIOS[scen_idx].harden_disabled_edges,edgeid)
+            is_hard_disable = p.SCENARIOS[scen_idx].harden_disabled_edges[edge_id]
+          end
+          
+          if is_harden_disable
+            @constraint(mip_model, lineHardenVariable[j] <= 0.0)
+          else
+            @constraint(mip_model, lineHardenVariable[j] <= 1.0)
+          end
         end
+#        for j = 1:numEdges
+ #           if p.HARDENED_DISABLED[j].data
+  #              @constraint(mip_model, lineHardenVariable[j] <= 0.0)
+   #         else
+    #            @constraint(mip_model, lineHardenVariable[j] <= 1.0)
+     #       end
+     #   end
         
         # DAMAGE CONSTRAINT
         supportable = zeros(Bool, numEdges)
@@ -130,16 +144,35 @@ function populateConstraints(ordgdp::ORDGDP, p::problemData, scen_idx::Int64)
             idx = hashTableEdges[p.HARDEN_COST[j].id]
             supportable[idx] = true
         end
-        for j = 1:length(p.DISABLED)
-            idx = hashTableEdges[p.DISABLED[j].id]
-            if p.DISABLED[j].data
-                if supportable[idx]
-                    @constraint(mip_model, lineUseVariable[idx] - lineHardenVariable[idx]== 0)
-                else
-                    @constraint(mip_model, lineUseVariable[idx] == 0)
-                end
+        
+        # EMRE, seem right????
+        for j = 1:numEdges
+          edgeid = p.EDGES[j].id
+          is_disable = false
+          if haskey(p.SCENARIOS[scen_idx].disabled_edges,edgeid)
+            is_disable = p.SCENARIOS[scen_idx].disabled_edges[edge_id]
+          end
+          
+          if disable
+            if supportable[j]
+              @constraint(mip_model, lineUseVariable[j] - lineHardenVariable[j]== 0)
+            else
+              @constraint(mip_model, lineUseVariable[j] == 0)
             end
-        end
+          end
+        end        
+        #for j = 1:length(p.DISABLED)
+         #   idx = hashTableEdges[p.DISABLED[j].id]
+          #  if p.DISABLED[j].data
+           #     if supportable[idx]
+            #        @constraint(mip_model, lineUseVariable[idx] - lineHardenVariable[idx]== 0)
+             #   else
+              #      @constraint(mip_model, lineUseVariable[idx] == 0)
+              #  end
+         #   end
+        #end
+        
+        
     end
 
     # LOAD CONSTRAINT

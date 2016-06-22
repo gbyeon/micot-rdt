@@ -7,17 +7,17 @@ include("VNS.jl")
 facts("Variable Neighborhood Search Test") do
     m = Model(solver=CplexSolver())
 
-    @defVar(m, x >= 0, start = 1, Int)
-    @defVar(m, z >= 0, start = 1, Int)
-    @defVar(m, y >= 0, start = 1)
+    @variable(m, x >= 0, start = 1, Int)
+    @variable(m, z >= 0, start = 1, Int)
+    @variable(m, y >= 0, start = 1)
 
-    @setObjective(m, Min, -3x - y + z)
+    @Objective(m, Min, -3x - y + z)
 
-    @addConstraint(m, 3x + 2y + z <= 20)
+    @constraint(m, 3x + 2y + z <= 20)
 
-    @addConstraint(m, x + 3z <= 10)
+    @constraint(m, x + 3z <= 10)
 
-    @addConstraint(m, z >= 1.5)
+    @constraint(m, z >= 1.5)
 
     master_var = Any[]
     push!(master_var, [x])
