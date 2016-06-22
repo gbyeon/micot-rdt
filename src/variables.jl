@@ -1,3 +1,5 @@
+
+
 function populateVariables(ordgdp::ORDGDP, p::problemData, scen_idx::Int64, recordMaster::Bool)
 
     numPhases = p.numPhases
