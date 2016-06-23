@@ -20,7 +20,7 @@ mip_solver = CplexSolver()
 function loadModel(ordgdp::ORDGDP, p::problemData, scen_idx::Int64, recordMaster::Bool)
    
     populateVariables(ordgdp, p, scen_idx, recordMaster)
-    populateConstraints(ordgdp, p, scen_idx, recordMaster)
+    populateConstraints(ordgdp, p, scen_idx)
 
 end
 
@@ -91,7 +91,7 @@ end
 function solveORDGDP(filename::AbstractString)
 
     problem_data = problemData(filename)
-    ordgdp = ORDGDP(mip_solver, problem_data, 0)
+    ordgdp = ORDGDP(mip_solver, problem_data, 0, true)
 
     master_ordgdp = generateScenario([], false, Any[], 0)
 

@@ -123,9 +123,9 @@ end
 type lineCodeData
     lineCode::AbstractString
     numPhases::Int64
-    rmatrix
-    xmatrix
-    function lineCodeData(lineCode::AbstractString, numPhases::Int64, rmatrix, xmatrix)
+    rmatrix::Array{Float64,2}
+    xmatrix::Array{Float64,2}
+    function lineCodeData(lineCode::AbstractString, numPhases::Int64, rmatrix::Array{Float64,2}, xmatrix::Array{Float64,2})
         l = new()
         l.lineCode = lineCode
         l.numPhases = numPhases
@@ -264,7 +264,7 @@ type ORDGDP
     loadServeVariable::Vector{Variable}
     facilityVariable::Vector{Variable}
    
-    function ORDGDP(ordgdp_solver, problem_data::problemData, scen_idx::Int64)
+    function ORDGDP(ordgdp_solver, problem_data::problemData, scen_idx::Int64, load_master::Bool)
         ordgdp = new()
         ordgdp.mip_model = Model(solver=ordgdp_solver)
 
@@ -289,7 +289,7 @@ type ORDGDP
         ordgdp.loadServeVariable = Variable[]
         ordgdp.facilityVariable = Variable[]
 
-        loadModel(ordgdp, problem_data, scen_idx)
+        loadModel(ordgdp, problem_data, scen_idx, load_master)
         return ordgdp
     end
  
@@ -427,15 +427,16 @@ function loadProblemDataJSONDict(p::problemData, data::Dict)
   for line_code in line_codes
     id = line_code["line_code"]
     num_phases = line_code["num_phases"] # do we need this?  
-    rmatrix = [ [line_code["rmatrix"][1][1], line_code["rmatrix"][1][2], line_code["rmatrix"][1][3]];
-                [line_code["rmatrix"][2][1], line_code["rmatrix"][2][2], line_code["rmatrix"][2][3]];
-                [line_code["rmatrix"][3][1], line_code["rmatrix"][3][2], line_code["rmatrix"][3][3]]
+    rmatrix = [ line_code["rmatrix"][1][1] line_code["rmatrix"][1][2] line_code["rmatrix"][1][3];
+                line_code["rmatrix"][2][1] line_code["rmatrix"][2][2] line_code["rmatrix"][2][3];
+                line_code["rmatrix"][3][1] line_code["rmatrix"][3][2] line_code["rmatrix"][3][3]
               ]
 
-    xmatrix = [ [line_code["xmatrix"][1][1], line_code["xmatrix"][1][2], line_code["xmatrix"][1][3]];
-                [line_code["xmatrix"][2][1], line_code["xmatrix"][2][2], line_code["xmatrix"][2][3]];
-                [line_code["xmatrix"][3][1], line_code["xmatrix"][3][2], line_code["xmatrix"][3][3]]
+    xmatrix = [ line_code["xmatrix"][1][1] line_code["xmatrix"][1][2] line_code["xmatrix"][1][3];
+                line_code["xmatrix"][2][1] line_code["xmatrix"][2][2] line_code["xmatrix"][2][3];
+                line_code["xmatrix"][3][1] line_code["xmatrix"][3][2] line_code["xmatrix"][3][3]
               ]
+                                     
     lc = lineCodeData(id, num_phases, rmatrix, xmatrix)
     push!(p.LINECODES,lc) 
     p.hashTableLineCodes[id] = length(p.LINECODES)     
@@ -486,8 +487,6 @@ function loadProblemDataJSONDict(p::problemData, data::Dict)
     addEdge(G, idx2, idx1)
   end
   p.CYCLES = OrderedSet{Int64}[]
-  println("Finished creating graph")
   detectCycles(G, p.CYCLES)
-  println("Finished detect cycles")
   
 end
