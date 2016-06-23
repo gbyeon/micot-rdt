@@ -17,7 +17,7 @@ using DataStructures
 type Vertex 
     label::Int64
     id::AbstractString
-    AdjList::Vector{Int64}
+    AdjList::Set{Int64}
     visited::Bool
     included::Bool
     parent::Int64
@@ -27,7 +27,7 @@ type Vertex
     function Vertex(x)
         v = new()
         v.label = x
-        v.AdjList = Int64[]
+        v.AdjList = Set{Int64}()
         v.visited = false
         v.included = false
         v.parent = -1
@@ -202,11 +202,15 @@ function insertPath(P::Vector{OrderedSet{Int64}}, path_ini::OrderedSet{Int64})
     path = copy(path_ini)
     if isNewPath(P, path)
         push!(P, path)
+      #  println("Found new path: $path")
     end
 end
 
 function findAllstPaths(G::Graph, P::Vector{OrderedSet{Int64}}, path_ini::OrderedSet{Int64}, u::Int64, t::Int64, V::OrderedSet{Int64})
     path = copy(path_ini)
+    blah = G.V[u].AdjList
+#    println("adjacent nodes to $u are $blah")
+    
     for v in G.V[u].AdjList
         if v == t && length(path) == 1
             continue
@@ -217,6 +221,7 @@ function findAllstPaths(G::Graph, P::Vector{OrderedSet{Int64}}, path_ini::Ordere
                 delete!(path, v) 
             else
                 push!(path, v)
+               # println("current path: $path")
                 findAllstPaths(G, P, path, v, t, V)
                 delete!(path, v)
             end
@@ -235,7 +240,10 @@ function detectCycles(G::Graph, cycles::Vector{OrderedSet{Int64}})
     source = 0
     DFS(G, S, source, C)
 
+    println(length(C))
     for i = 1:length(C)
+        println(i)
+      
         V = OrderedSet{Int64}()
         GenerateSubGraph(C[i], V)
         E = Edge[]

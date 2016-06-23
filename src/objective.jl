@@ -113,6 +113,9 @@ function populateMinimization(ordgdp::ORDGDP)
         idx = p.hashTableGenerators[p.MICROGRID_FIXED_COST[j].id]
         FACILITY_COST[idx] += p.MICROGRID_FIXED_COST[j].data
     end
+    
+    #TODO, potential bug here, we might be able to turn off the line without a switch here here.
+    
 
     @objective(mip_model, Min, 
         sum{p.LINE_CONSTRUCTION_COST[j].data * lineUseVariable[p.hashTableEdges[p.LINE_CONSTRUCTION_COST[j].id]], j in 1:length(LINE_CONSTRUCTION_COST)} +

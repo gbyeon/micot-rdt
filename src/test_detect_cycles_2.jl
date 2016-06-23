@@ -23,3 +23,5 @@ create_random_graph(G, 10, 20)
 cycles = OrderedSet{Int64}[]
 
 detectCycles(G, cycles)
+
+println(cycles)

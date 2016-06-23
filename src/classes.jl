@@ -405,8 +405,8 @@ function loadProblemDataJSONDict(p::problemData, data::Dict)
     can_add_switch = haskey(edge, "can_add_switch") ? edge["can_add_switch"] : false
        
     construction_cost = haskey(edge,"construction_cost") ? edge["construction_cost"] : isNew ? Inf : 0.0    
-    harden_cost = haskey(edge, "harden_cost") ? edge["harden_cost"] : Inf 
-    switch_cost = haskey(edge, "switch_cost") ? edge["switch_cost"] : has_switch ? 0 : Inf    
+    harden_cost = haskey(edge, "harden_cost") ? edge["harden_cost"] : can_harden ? 0 : Inf 
+    switch_cost = haskey(edge, "switch_cost") ? edge["switch_cost"] : has_switch ? 0 : can_add_switch ? 0 : Inf    
               
     e = edgeData(id, node1id, node2id, has_phase, capacity, len, num_phases, is_transformer, line_code, is_new, has_switch, can_harden, can_add_switch)
   
