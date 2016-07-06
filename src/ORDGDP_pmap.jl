@@ -2,7 +2,9 @@ using FactCheck
 using JSON
 
 @everywhere using JuMP
-@everywhere using CPLEX
+#@everywhere using CPLEX
+#@everywhere using Cbc
+
 @everywhere begin
 
 include("SBD_pmap.jl")
@@ -12,15 +14,17 @@ include("objective.jl")
 include("variables.jl")
 include("constraints.jl")
 
-# Why is this a global variable.  TODO
-mip_solver = CplexSolver()
+# Why is this a global variable.  TODO make this an input parameter
+#mip_solver = CplexSolver()
+#mip_solver = CbcSolver()
+
 
 # // -- GENERATE SCENARIO scen_idx ----------------------------
 # TODO Move variables under their associated classes
 function loadModel(ordgdp::ORDGDP, p::problemData, scen_idx::Int64, recordMaster::Bool)
    
     populateVariables(ordgdp, p, scen_idx, recordMaster)
-    populateConstraints(ordgdp, p, scen_idx, recordMaster)
+    populateConstraints(ordgdp, p, scen_idx)
 
 end
 
@@ -41,7 +45,7 @@ function fixSolution(ordgdp, values)
 
 end
 
-function generateScenario(master_ordgdp, fixVals, master_var, scen_idx)
+function generateScenario(master_ordgdp, fixVals, master_var, scen_idx, mip_solver)
 
     start = time()
  
@@ -88,12 +92,12 @@ function master_solver(master_model, master_solution, master_var)
     return VariableNeighborhoodSearch(master_model, master_solution, lp_relaxation, master_var, Any[], Any[], 3600.0)
 end
 
-function solveORDGDP(filename::AbstractString)
+function solveORDGDP(filename::AbstractString, mip_solver)
 
     problem_data = problemData(filename)
-    ordgdp = ORDGDP(mip_solver, problem_data, 0)
+    ordgdp = ORDGDP(mip_solver, problem_data, 0, true)
 
-    master_ordgdp = generateScenario([], false, Any[], 0)
+    master_ordgdp = generateScenario([], false, Any[], 0, mip_solver)
 
     #ScenarioBasedDecomposition_pmap(generateScenario, master_solver, cost, master_model, master_var, numSubProb)
 end

@@ -28,15 +28,19 @@ function populateConstraints(ordgdp::ORDGDP, p::problemData, scen_idx::Int64)
     loadServeVariable = ordgdp.loadServeVariable
     facilityVariable = ordgdp.facilityVariable
  
-
+    
+    
     # VOLTAGE CONSTRAINTS
     for i = 1:numEdges
+      edge = p.EDGES[i]
+      
         # TODO These references should be const
-        idx1 = p.hashTableVertex[p.EDGES[i].node1id]
-        idx2 = p.hashTableVertex[p.EDGES[i].node2id]
-        lineCodeIdx = p.hashTableLineCodes[p.EDGES[i].lineCode] 
-        rmatrix = p.LINECODES[lineCodeIdx].rmatrix
-        xmatrix = p.LINECODES[lineCodeIdx].xmatrix
+        idx1 = p.hashTableNodes[edge.node1id]
+        idx2 = p.hashTableNodes[edge.node2id]
+        lineCodeIdx = p.hashTableLineCodes[edge.lineCode] 
+        rmatrix = p.LINECODES[lineCodeIdx].rmatrix * edge.length
+        xmatrix = p.LINECODES[lineCodeIdx].xmatrix * edge.length
+        
         if p.EDGES[i].numPhases == 1
             for j = 1:numPhases
                 if p.EDGES[i].hasPhase[j]
@@ -45,11 +49,12 @@ function populateConstraints(ordgdp::ORDGDP, p::problemData, scen_idx::Int64)
             end
         else
             for j = 1:numPhases 
-                @constraint(mip_model, voltageVariable[idx2,j] - voltageVariable[idx1,j] + voltageOffsetVariable[i,j] + sum{2.0*rmatrix[mod(numPhases-j+l, numPhases)+1,j,l]*flowRealVariable[i,l] + 2.0*xmatrix[mod(numPhases-j+l, numPhases)+1,j,l]*flowReactiveVariable[i,l], l = 1:numPhases} == 0.0)
+                @constraint(mip_model, voltageVariable[idx2,j] - voltageVariable[idx1,j] + voltageOffsetVariable[i,j] + sum{2.0*rmatrix[mod(numPhases-j+l, numPhases)+1,j,l]*flowRealVariable[i,l] + 2.0*xmatrix[mod(numPhases-j+l, numPhases)+1,j,l]*flowReactiveVariable[i,l], l = 1:numPhases} == 0.0)              
             end
         end
     end
-
+  
+    
     # TODO Properly calculate this constant using p.u. or actual max voltage
     voltageMAX = 1e+5
     # VOLTAGE OFFSET CONSTRAINT
@@ -98,7 +103,7 @@ function populateConstraints(ordgdp::ORDGDP, p::problemData, scen_idx::Int64)
         @constraint(mip_model, lineExistsVariable[j] == lineDirectionVariableForward[j] + lineDirectionVariableBackward[j]) 
     end 
 
-    PhaseVariation = p.phase_variation 
+    PhaseVariation = p.phaseVariation 
     # PHASE VARIATION CONSTRAINT
     for j = 1:numEdges
         if p.EDGES[j].numPhases > 1 && p.EDGES[j].isTransformer
@@ -113,8 +118,9 @@ function populateConstraints(ordgdp::ORDGDP, p::problemData, scen_idx::Int64)
     end
 
     # EVERYDAY OPERATION = NO DAMAGE
-    # EMRE, should this be != 0?????    
-    if scen_idx == 0
+    # EMRE, i changed this conditional.  Is it what you meant?    
+    #if scen_idx == 0  
+    if scen_idx != 0
         # HARDEN CONSTRAINT        
         # seem right EMRE???
         for j = 1:numEdges
@@ -188,18 +194,19 @@ function populateConstraints(ordgdp::ORDGDP, p::problemData, scen_idx::Int64)
     # GENERATION CONSTRAINT
     maxRealPhase = zeros(Float64, numNodes, numPhases)
     maxReactivePhase = zeros(Float64, numNodes, numPhases)
+    
     for j = 1:numNodes
         for l in p.NODES[j].GeneratorList
             for k = 1:numPhases
-                maxRealPhase[j][k] += p.GENERATORS[l].maxRealPhase[k] 
-                maxReactivePhase[j][k] += p.GENERATORS[l].maxReactivePhase[k] 
+              maxRealPhase[j,k] += p.GENERATORS[l].maxRealPhase[k] 
+              maxReactivePhase[j,k] += p.GENERATORS[l].maxReactivePhase[k] 
             end
         end
     end
     maxAdded = zeros(Float64, numGenerators)
     for j = 1:length(p.MAX_MICROGRID)
-        idx = hashTableGenerators[p.MAX_MICROGRID[j].id]
-        maxAdded[idx] = MAX_MICROGRID[j].data
+        idx = p.hashTableGenerators[p.MAX_MICROGRID[j].id]
+        maxAdded[idx] = p.MAX_MICROGRID[j].data
     end
     for j = 1:numNodes
         for k = 1:numPhases
@@ -211,7 +218,7 @@ function populateConstraints(ordgdp::ORDGDP, p::problemData, scen_idx::Int64)
     # FLOW BALANCE CONSTRAINT
     for j = 1:numNodes
         for k = 1:numPhases
-            if p.NODES[j].phaseConnect[k] 
+            if p.NODES[j].hasPhase[k] 
                 @constraint(mip_model, generatorRealVariable[j,k] - loadRealVariable[j,k] == sum{flowRealVariable[l,k], l in p.NODES[j].EdgeOutList} - sum{flowRealVariable[l,k], l in p.NODES[j].EdgeInList})             
                 @constraint(mip_model, generatorReactiveVariable[j,k] - loadReactiveVariable[j,k] == sum{flowReactiveVariable[l,k], l in p.NODES[j].EdgeOutList} - sum{flowReactiveVariable[l,k], l in p.NODES[j].EdgeInList})             
             end
@@ -224,10 +231,10 @@ function populateConstraints(ordgdp::ORDGDP, p::problemData, scen_idx::Int64)
         EdgeList = Int64[]
         C = length(cycle)
         for l = 1:numEdges
-            idx1 = hashTableNodes[p.EDGES[l].node1id]
-            idx2 = hashTableNodes[p.EDGES[l].node2id]
+            idx1 = p.hashTableNodes[p.EDGES[l].node1id]
+            idx2 = p.hashTableNodes[p.EDGES[l].node2id]
             if in(idx1, cycle) && in(idx2, cycle)
-                idx = hashTableUniqueEdge[l]
+                idx = p.hashTableUniqueEdges[l]
                 if !in(idx, EdgeList)
                     push!(EdgeList, idx)
                 end

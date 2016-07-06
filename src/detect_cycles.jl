@@ -75,7 +75,7 @@ end
   Biconnected component code
 =======================================================#
 
-function OutputComponent(S::Stack{Edge}, e::Edge, C::Vector{Vector{Edge}})
+function OutputComponent(S::Stack{Edge}, e::Edge, C::Vector{Vector{Edge}}; debug = false)
     Comp = Edge[]
     f = pop!(S)
     push!(Comp, f)
@@ -84,11 +84,13 @@ function OutputComponent(S::Stack{Edge}, e::Edge, C::Vector{Vector{Edge}})
         push!(Comp, f)
     end
     push!(C, Comp)
-    print("NEW COMPONENT: ")
-    for i = 1:length(Comp)
+    if debug
+      print("NEW COMPONENT: ")
+      for i = 1:length(Comp)
         print("$(Comp[i]) ")
+      end
+      print("\n")
     end
-    print("\n")
 end
 
 function DFS_visit(G::Graph, S::Stack{Edge}, u::Int64, depth::Int64, C::Vector{Vector{Edge}})
@@ -240,9 +242,7 @@ function detectCycles(G::Graph, cycles::Vector{OrderedSet{Int64}})
     source = 0
     DFS(G, S, source, C)
 
-    println(length(C))
     for i = 1:length(C)
-        println(i)
       
         V = OrderedSet{Int64}()
         GenerateSubGraph(C[i], V)
@@ -257,5 +257,5 @@ function detectCycles(G::Graph, cycles::Vector{OrderedSet{Int64}})
  
     end
 
-    printCycles(cycles)
+#    printCycles(cycles)
 end
