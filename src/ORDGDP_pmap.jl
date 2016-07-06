@@ -2,7 +2,9 @@ using FactCheck
 using JSON
 
 @everywhere using JuMP
-@everywhere using CPLEX
+#@everywhere using CPLEX
+@everywhere using Cbc
+
 @everywhere begin
 
 include("SBD_pmap.jl")
@@ -12,8 +14,10 @@ include("objective.jl")
 include("variables.jl")
 include("constraints.jl")
 
-# Why is this a global variable.  TODO
-mip_solver = CplexSolver()
+# Why is this a global variable.  TODO make this an input parameter
+#mip_solver = CplexSolver()
+mip_solver = CbcSolver()
+
 
 # // -- GENERATE SCENARIO scen_idx ----------------------------
 # TODO Move variables under their associated classes

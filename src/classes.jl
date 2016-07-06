@@ -123,9 +123,9 @@ end
 type lineCodeData
     lineCode::AbstractString
     numPhases::Int64
-    rmatrix::Array{Float64,2}
-    xmatrix::Array{Float64,2}
-    function lineCodeData(lineCode::AbstractString, numPhases::Int64, rmatrix::Array{Float64,2}, xmatrix::Array{Float64,2})
+    rmatrix::Array{Float64,3}
+    xmatrix::Array{Float64,3}
+    function lineCodeData(lineCode::AbstractString, numPhases::Int64, rmatrix::Array{Float64,3}, xmatrix::Array{Float64,3})
         l = new()
         l.lineCode = lineCode
         l.numPhases = numPhases
@@ -426,17 +426,53 @@ function loadProblemDataJSONDict(p::problemData, data::Dict)
   line_codes = data["line_codes"]
   for line_code in line_codes
     id = line_code["line_code"]
-    num_phases = line_code["num_phases"] # do we need this?  
-    rmatrix = [ line_code["rmatrix"][1][1] line_code["rmatrix"][1][2] line_code["rmatrix"][1][3];
-                line_code["rmatrix"][2][1] line_code["rmatrix"][2][2] line_code["rmatrix"][2][3];
-                line_code["rmatrix"][3][1] line_code["rmatrix"][3][2] line_code["rmatrix"][3][3]
-              ]
+    num_phases = line_code["num_phases"] # do we need this? 
+            
+#    rmatrix = [ line_code["rmatrix"][1][1] line_code["rmatrix"][1][2] line_code["rmatrix"][1][3];
+ #               line_code["rmatrix"][2][1] line_code["rmatrix"][2][2] line_code["rmatrix"][2][3];
+  #              line_code["rmatrix"][3][1] line_code["rmatrix"][3][2] line_code["rmatrix"][3][3]
+   #           ]
 
-    xmatrix = [ line_code["xmatrix"][1][1] line_code["xmatrix"][1][2] line_code["xmatrix"][1][3];
-                line_code["xmatrix"][2][1] line_code["xmatrix"][2][2] line_code["xmatrix"][2][3];
-                line_code["xmatrix"][3][1] line_code["xmatrix"][3][2] line_code["xmatrix"][3][3]
-              ]
-                                     
+#    xmatrix = [ line_code["xmatrix"][1][1] line_code["xmatrix"][1][2] line_code["xmatrix"][1][3];
+ #               line_code["xmatrix"][2][1] line_code["xmatrix"][2][2] line_code["xmatrix"][2][3];
+  #              line_code["xmatrix"][3][1] line_code["xmatrix"][3][2] line_code["xmatrix"][3][3]
+   #           ]
+      
+      
+    rmatrix = zeros(Float64, 3,3,3)  
+    xmatrix = zeros(Float64, 3,3,3)
+    for i=1:3
+      for j=1:3
+        rmatrix[1,i,j] = line_code["rmatrix"][i][j]          
+        xmatrix[1,i,j] = line_code["xmatrix"][i][j]                   
+      end
+    end   
+    
+    # Rotate and scale the r and x matrices         
+    # Index 1 = 120 and Index 2 = 240
+    rotation = zeros(Float64, 2, 2, 2)        
+    rotation[1,1,1] = -0.5;
+    rotation[1,1,2] = -0.866;
+    rotation[1,2,1] = 0.866;
+    rotation[1,2,2] = -0.5;
+    rotation[2,1,1] = -0.5;
+    rotation[2,1,2] = 0.866;
+    rotation[2,2,1] = -0.866;
+    rotation[2,2,2] = -0.5;		
+
+    for k=1:2
+      for i=1:3
+	for j=1:3
+	  r = rmatrix[1,i,j]
+	  x = xmatrix[1,i,j]
+	  newr = (rotation[k,1,1] * r) + (rotation[k,1,2] * x) 
+	  newx = (rotation[k,2,1] * r) + (rotation[k,2,2] * x) 
+	  rmatrix[1+k,i,j] = newr
+	  xmatrix[1+k,i,j] = newx
+        end
+     end
+   end   
+      
     lc = lineCodeData(id, num_phases, rmatrix, xmatrix)
     push!(p.LINECODES,lc) 
     p.hashTableLineCodes[id] = length(p.LINECODES)     
