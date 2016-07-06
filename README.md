@@ -382,6 +382,23 @@ This the repository for MICOT's RDT capability. The main point of entry is the c
   ]
 }
 
+# MIP Solver Settings API
+
+The RDT tool requires a mixed integer programming solver to perform some of the optimization steps.  This can be provided with a simple json input file that contains the name of the solver and any optional parameters available to the solver (see https://jump.readthedocs.io/en/latest/ for a discussion on possible parameters)
+
+For example, consider this json string
+
+{
+  "mip_solver": "IPOPT",
+  "tol": 1e-6,
+  "print_level": 0
+}
+
+The mip_solver is defined as IPOPT.  The other two arguments are solver parameters specific to ipopt.  Note that Ipopt cannot actaully solve problems that have discrete problems, so this may not be the best example.
+
+Valid MIP solvers include "CPLEX", "MOSEK", "BONMIN", "GUROBI", and "CBC"
+
+This optional parameter is provided with the --mip_solver flag at the command lilne.  If no parameters are provided, CBC is used as the MIP solver. 
 
 # Algorithm Settings API
 
