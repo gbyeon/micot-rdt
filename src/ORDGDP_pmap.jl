@@ -3,7 +3,7 @@ using JSON
 
 @everywhere using JuMP
 #@everywhere using CPLEX
-@everywhere using Cbc
+#@everywhere using Cbc
 
 @everywhere begin
 
@@ -16,7 +16,7 @@ include("constraints.jl")
 
 # Why is this a global variable.  TODO make this an input parameter
 #mip_solver = CplexSolver()
-mip_solver = CbcSolver()
+#mip_solver = CbcSolver()
 
 
 # // -- GENERATE SCENARIO scen_idx ----------------------------
@@ -45,7 +45,7 @@ function fixSolution(ordgdp, values)
 
 end
 
-function generateScenario(master_ordgdp, fixVals, master_var, scen_idx)
+function generateScenario(master_ordgdp, fixVals, master_var, scen_idx, mip_solver)
 
     start = time()
  
@@ -92,12 +92,12 @@ function master_solver(master_model, master_solution, master_var)
     return VariableNeighborhoodSearch(master_model, master_solution, lp_relaxation, master_var, Any[], Any[], 3600.0)
 end
 
-function solveORDGDP(filename::AbstractString)
+function solveORDGDP(filename::AbstractString, mip_solver)
 
     problem_data = problemData(filename)
     ordgdp = ORDGDP(mip_solver, problem_data, 0, true)
 
-    master_ordgdp = generateScenario([], false, Any[], 0)
+    master_ordgdp = generateScenario([], false, Any[], 0, mip_solver)
 
     #ScenarioBasedDecomposition_pmap(generateScenario, master_solver, cost, master_model, master_var, numSubProb)
 end
