@@ -23,14 +23,13 @@ This the repository for MICOT's RDT capability. The main point of entry is the c
 5. Test running the code from the command line by calling "julia cli.jl --file  data/34Bus_Ice_Harden_Damageable_Rural_70Percent.json (note that this will fail at the moment as the capability is being rewritten in Julia to support non commerical optimization packages)
 
 # Input API
-
-{
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "title": "Resilient Design Tool (RDT) JSON schema",
-  "description": "These schema describes the fields for the JSON schema used by the RDT Tool",
-  "properties": {
-    "critical_load_met": {
+	{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"type": "object",
+	"title": "Resilient Design Tool (RDT) JSON schema",
+	"description": "These schema describes the fields for the JSON schema used by the RDT Tool",
+	"properties": {
+	"critical_load_met": {
       "type": "number",
       "description": "This is a number between 0 and 1 indicates the percentage of critical load that must be met in each damage scenario",
       "default": 0.98
@@ -252,7 +251,7 @@ This the repository for MICOT's RDT capability. The main point of entry is the c
     }
  
  
-"lines_codes": {
+	"lines_codes": {
       "type": "array",
       "description": "This is an array of the line codes of the model.  This used to compactly model aspects of a line that are common across lines.  For example, impedance values.",
       "items": {
@@ -372,15 +371,15 @@ This the repository for MICOT's RDT capability. The main point of entry is the c
         ]
       }
     }
-  },
-  "required": [
+	},
+	"required": [
 	"buses",
 	"loads",
 	"lines",
     "line_codes",
 	"generators"
-  ]
-}
+	]
+	}
 
 # MIP Solver Settings API
 
