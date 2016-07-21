@@ -38,12 +38,12 @@ if (Pkg.installed("Gurobi") != nothing)
   using Gurobi
 end
 
-if (Pkg.installed("AmplNLWriter") != nothing && Pkg.installed("CoinOptServices") != nothing)
-  using AmplNLWriter
-  using CoinOptServices
+#if (Pkg.installed("AmplNLWriter") != nothing && Pkg.installed("CoinOptServices") != nothing)
+#  using AmplNLWriter
+ # using CoinOptServices
   # note that AmplNLWriter.AmplNLSolver is the solver type of bonmin
-  solver_status_lookup[AmplNLWriter.AmplNLSolver] = Dict(:Optimal => :LocalOptimal, :Infeasible => :LocalInfeasible)
-end
+  #solver_status_lookup[AmplNLWriter.AmplNLSolver] = Dict(:Optimal => :LocalOptimal, :Infeasible => :LocalInfeasible)
+#end
 
 if (Pkg.installed("Mosek") != nothing)
   using Mosek

@@ -372,13 +372,45 @@ This the repository for MICOT's RDT capability. The main point of entry is the c
 				]
 			}
 		}
+		
+		"scenarios": {
+      "type": "array",
+      "description": "This block contains information about the damage scenarios",
+      "items": {
+        "type": "object",
+        "description": "Each entry in the array contains information about a single damage scenario",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "A unique identifier for the scenario",
+          },
+          "hardened_disabled_lines": {
+            "type": "array",
+            "description": "A list of identifiers for lines that are damaged even after being hardened",
+            "items": {}
+          },
+          "disabled_lines": {
+            "type": "array",
+            "description": "A list of identifiers for lines that are damaged if they are not hardened",
+            "items": {}
+          }
+        },
+        "required": [
+          "id",
+        ]
+      }
+    } 
+		
+		
+		
 	},
 	"required": [
 	"buses",
 	"loads",
 	"lines",
-		"line_codes",
-	"generators"
+    "line_codes",
+	"generators",
+	"scenarios"
 	]
 	}
 
