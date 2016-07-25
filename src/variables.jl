@@ -26,8 +26,10 @@ function populateVariables(ordgdp::ORDGDP, p::problemData, scen_idx::Int64, reco
 
     # NODE BASED VARIABLES
     ordgdp.voltageVariable = @variable(mip_model, voltageVariableA[1:numNodes,1:numPhases])
-    ordgdp.loadRealVariable = @variable(mip_model, loadRealVariableA[1:numNodes,1:numPhases])
-    ordgdp.loadReactiveVariable = @variable(mip_model, loadReactiveVariableA[1:numNodes,1:numPhases])
+    ordgdp.loadRealVariable = @variable(mip_model, loadRealVariableA[1:numLoads,1:numPhases])
+    ordgdp.loadReactiveVariable = @variable(mip_model, loadReactiveVariableA[1:numLoads,1:numPhases])
+    
+    # RBENT TODO - should this be by numGenerators not numNodes???
     ordgdp.generatorRealVariable = @variable(mip_model, generatorRealVariableA[1:numNodes,1:numPhases])
     ordgdp.generatorReactiveVariable = @variable(mip_model, generatorReactiveVariableA[1:numNodes,1:numPhases])
 

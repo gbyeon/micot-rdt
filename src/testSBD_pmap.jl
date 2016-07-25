@@ -84,6 +84,7 @@ end
 
 end
 
+# generates an example of a master files
 function generateMaster()
     master_var = Any[]
     master_model = Model(solver=CplexSolver()) 
@@ -96,7 +97,7 @@ end
 
 function master_solver(master_model, master_solution, master_var)
     lp_relaxation = Any[]
-    push!(lp_relaxation, [0.5,0.5,0.5])
+    push!(lp_relaxation, [0.5,0.5,0.5]) # not actaually solving the lp relaxation, just creating an arbitrary solution
     return VariableNeighborhoodSearch(master_model, master_solution, lp_relaxation, master_var, Any[], Any[], 3600.0)
 end
 

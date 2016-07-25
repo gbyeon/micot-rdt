@@ -193,7 +193,8 @@ type problemData
     # Scenario data
     SCENARIOS::Vector{scenarioData}
     
-    # Constructor  TODO assumes the string is a filename. May want to make this abstract since it could just be a piped string
+    # Constructor  RBENT TODO assumes the string is a filename. 
+    # May want to make this abstract since it could just be a piped string
     function problemData(filename::AbstractString)
         p = new()
 
@@ -263,7 +264,12 @@ type ORDGDP
     generatorReactiveVariable::Array{Variable,2}
     loadServeVariable::Vector{Variable}
     facilityVariable::Vector{Variable}
-   
+
+    # Constructor 
+    # ordgdp_solver = optimization solver used to solve the problem
+    # problem_data = the data of the power system
+    # scen_idx = the scenario for which we are constructing the problem for
+    # load_master = whether or not we are loading the master problem (base scenario) or not   
     function ORDGDP(ordgdp_solver, problem_data::problemData, scen_idx::Int64, load_master::Bool)
         ordgdp = new()
         ordgdp.mip_model = Model(solver=ordgdp_solver)
@@ -524,5 +530,30 @@ function loadProblemDataJSONDict(p::problemData, data::Dict)
   end
   p.CYCLES = OrderedSet{Int64}[]
   detectCycles(G, p.CYCLES)
+  
+  # index all edges by a the nodes that are connected to, uniquely
+  unique_edge_idx = 1
+  edge_assigned = Dict{Int64, Dict{Int64, Int64}}()
+  for i in 1:length(p.NODES)
+    edge_assigned[i] = Dict{Int64, Int64}()
+  end
+  for i in 1:length(p.EDGES)
+    idx1 = p.hashTableNodes[p.EDGES[i].node1id]
+    idx2 = p.hashTableNodes[p.EDGES[i].node2id]
+    
+    ei = -1
+    if haskey(edge_assigned[idx1], idx2)
+      ei = edge_assigned[idx1][idx2]
+    end
+    
+    if ei == -1
+      ei = unique_edge_idx
+      unique_edge_idx = unique_edge_idx + 1
+    end
+    
+    p.hashTableUniqueEdges[p.EDGES[i].id] = ei
+    
+  end  
+    
   
 end

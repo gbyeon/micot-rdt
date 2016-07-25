@@ -53,7 +53,7 @@ function populateInfeasibilityMinimization(ordgdp::ORDGDP)
 
 end
 
-function populateMinimization(ordgdp::ORDGDP)
+function populateMinimization(ordgdp::ORDGDP, p::problemData)
 
     numPhases = p.numPhases
     numNodes = length(p.NODES)
@@ -86,22 +86,30 @@ function populateMinimization(ordgdp::ORDGDP)
     CriticalLoadList = Int64[]
     for j = 1:length(p.IS_CRITICAL_LOAD)
         idx = p.hashTableLoads[p.IS_CRITICAL_LOAD[j].id]
-        if p.IS_CRITICAL_LOAD[j]
+        if p.IS_CRITICAL_LOAD[j].data
             push!(CriticalLoadList, idx)
         end
     end
-    for k = 1:numPhases
-        @constraint(mip_model, sum{loadRealVariable[j,k], j in CriticalLoadList} >= p.CriticalRealDemand[k])
-        @constraint(mip_model, sum{loadReactiveVariable[j,k], j in CriticalLoadList} >= p.CriticalReactiveDemand[k])
-
-        @constraint(mip_model, sum{loadRealVariable[j,k], j in 1:numLoads} >= p.TotalRealDemand[k])
-        @constraint(mip_model, sum{loadReactiveVariable[j,k], j in 1:numLoads} >= p.TotalReactiveDemand[k])
-    end
+    
+    
+    
+    # TODO RBENT - Another place for refactoring... constraints are living here
+    @constraint(mip_model, sum{loadRealVariable[j,k], j in CriticalLoadList, k in 1:numPhases} >= p.CriticalRealDemand)
+    @constraint(mip_model, sum{loadReactiveVariable[j,k], j in CriticalLoadList,k in 1:numPhases} >= p.CriticalReactiveDemand)
+    @constraint(mip_model, sum{loadRealVariable[j,k], j in 1:numLoads, k in 1:numPhases} >= p.TotalRealDemand)
+    @constraint(mip_model, sum{loadReactiveVariable[j,k], j in 1:numLoads, k in 1:numPhases} >= p.TotalReactiveDemand)
+           
+#    for k = 1:numPhases
+ #       @constraint(mip_model, sum{loadRealVariable[j,k], j in CriticalLoadList} >= p.CriticalRealDemand[k])
+  #      @constraint(mip_model, sum{loadReactiveVariable[j,k], j in CriticalLoadList} >= p.CriticalReactiveDemand[k])
+   #     @constraint(mip_model, sum{loadRealVariable[j,k], j in 1:numLoads} >= p.TotalRealDemand[k])
+    #    @constraint(mip_model, sum{loadReactiveVariable[j,k], j in 1:numLoads} >= p.TotalReactiveDemand[k])
+    #end
 
     maxAdded = zeros(Float64, numGenerators)
     for j = 1:length(p.MAX_MICROGRID)
-        idx = hashTableGenerators[p.MAX_MICROGRID[j].id]
-        maxAdded[idx] = MAX_MICROGRID[j].data
+        idx = p.hashTableGenerators[p.MAX_MICROGRID[j].id]
+        maxAdded[idx] = p.MAX_MICROGRID[j].data
     end
 
     FACILITY_COST = zeros(Float64, numGenerators)
@@ -116,11 +124,10 @@ function populateMinimization(ordgdp::ORDGDP)
     
     #TODO, potential bug here, we might be able to turn off the line without a switch here here.
     
-
     @objective(mip_model, Min, 
-        sum{p.LINE_CONSTRUCTION_COST[j].data * lineUseVariable[p.hashTableEdges[p.LINE_CONSTRUCTION_COST[j].id]], j in 1:length(LINE_CONSTRUCTION_COST)} +
-        sum{p.LINE_SWITCH_COST[j].data * switchUseVariable[p.hashTableEdges[p.LINE_SWITCH_COST[j].id]], j in 1:length(LINE_SWITCH_COST)} +
-        sum{p.HARDEN_COST[j].data * lineHardenVariable[p.hashTableEdges[p.HARDEN_COST[j].id]], j in 1:length(HARDEN_COST)} +
-        sum{FACILITY_COST[j] * facilityVariable[j], j in 1:numGenerators})
+        sum{p.LINE_CONSTRUCTION_COST[j].data * lineUseVariable[p.hashTableEdges[p.LINE_CONSTRUCTION_COST[j].id]], j in 1:length(p.LINE_CONSTRUCTION_COST)} +
+        sum{p.LINE_SWITCH_COST[j].data * switchUseVariable[p.hashTableEdges[p.LINE_SWITCH_COST[j].id]], j in 1:length(p.LINE_SWITCH_COST)} +
+        sum{p.HARDEN_COST[j].data * lineHardenVariable[p.hashTableEdges[p.HARDEN_COST[j].id]], j in 1:length(p.HARDEN_COST)} +
+        sum{FACILITY_COST[j] * facilityVariable[j], j in 1:numGenerators})        
 end
 

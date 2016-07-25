@@ -14,7 +14,7 @@ function parse_commandline()
 
     @add_arg_table s begin
         "--file", "-f"
-            help = "an argument for the reslient design json file"
+            help = "an argument for the resilient design json file"
             default = "data/34Bus_Ice_Harden_Damageable_Rural_70Percent.json"
         "--mip_solver", "-m"
           help = "an argument for the mixed integer programming solver json file." 

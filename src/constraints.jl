@@ -234,7 +234,7 @@ function populateConstraints(ordgdp::ORDGDP, p::problemData, scen_idx::Int64)
             idx1 = p.hashTableNodes[p.EDGES[l].node1id]
             idx2 = p.hashTableNodes[p.EDGES[l].node2id]
             if in(idx1, cycle) && in(idx2, cycle)
-                idx = p.hashTableUniqueEdges[l]
+                idx = p.hashTableUniqueEdges[p.EDGES[l].id]
                 if !in(idx, EdgeList)
                     push!(EdgeList, idx)
                 end
@@ -243,8 +243,8 @@ function populateConstraints(ordgdp::ORDGDP, p::problemData, scen_idx::Int64)
         @constraint(mip_model, sum{lineCycleVariable[l] - switchCycleVariable[l], l in EdgeList} <= C - 1.0)
     end
     for j = 1:numEdges
-        @constraint(mip_model, lineUseVariable[j] <= lineCycleVariable[hashTableUniqueEdge[j]])
-        @constraint(mip_model, switchCycleVariable[hashTableUniqueEdge[j]] <= lineCycleVariable[hashTableUniqueEdge[j]])
+        @constraint(mip_model, lineUseVariable[j] <= lineCycleVariable[p.hashTableUniqueEdges[p.EDGES[j].id]])
+        @constraint(mip_model, switchCycleVariable[p.hashTableUniqueEdges[p.EDGES[j].id]] <= lineCycleVariable[p.hashTableUniqueEdges[p.EDGES[j].id]])
     end
     
 end

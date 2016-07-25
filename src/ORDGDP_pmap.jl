@@ -18,7 +18,6 @@ include("constraints.jl")
 #mip_solver = CplexSolver()
 #mip_solver = CbcSolver()
 
-
 # // -- GENERATE SCENARIO scen_idx ----------------------------
 # TODO Move variables under their associated classes
 function loadModel(ordgdp::ORDGDP, p::problemData, scen_idx::Int64, recordMaster::Bool)
@@ -45,28 +44,42 @@ function fixSolution(ordgdp, values)
 
 end
 
-function generateScenario(master_ordgdp, fixVals, master_var, scen_idx, mip_solver)
+# This is a kind of a multi-purposed generate scenario function
+# If the master problem is empty, we solve the sub problem with master problem
+# variables fixed. Otherwise, we just append this problem to the master problem
+# This is designed to fit into the scenario-based decomposition constructor function
+#
+# master_ordgdp = the master problem, if empty we just solve the sub problem with fixVals
+# fixed
+#
+# fixVals = the fixed variables of the master problem
+# master_var = the master variables
+# scen_idx = the scenario for which we are solving
+# mip_solver = the solver for a mized integer problem
+# TODO - RBENT - I think this should really be split into two seperate functions, they are doing 
+# two very different things
+function generateScenario(master_ordgdp, fixVals, master_var, scen_idx, mip_solver, problem_data)
 
     start = time()
  
-    if master_model != []
+    if master_ordgdp != []
         curr_ordgdp = master_ordgdp
     else
-        problem_data = problemData()
-        curr_ordgdp = ORDGDP(mip_solver, problem_data, scen_idx)
+        #problem_data = problemData() RBENT -- I have added this as an input data
+        curr_ordgdp = ORDGDP(mip_solver, problem_data, scen_idx, false)        
     end
 
     curr_solution = Any[]
     sub_solution = Any[]
 
-    if master_model == []
+    if master_ordgdp == []
         if fixVals
-            fixSolution(curr_model, master_var)
-            populateInfeasibilityMinimization(curr_model)
+            fixSolution(curr_ordgdp, master_var)
+            populateInfeasibilityMinimization(curr_ordgdp)
         else
-            populateMinimization(curr_model)
+            populateMinimization(curr_ordgdp, problem_data)
         end
-        solve(curr_model)
+        solve(curr_ordgdp.mip_model)
         for i = 1:length(curr_model.masterVariable)
             for j = 1:length(curr_model.masterVariable[i])
                 push!(sub_solution, getValue(curr_model.masterVariable[i][j]))
@@ -86,7 +99,7 @@ end
 
 function master_solver(master_model, master_solution, master_var)
 
-    # MUST SOLVE LP RELAXATION FIRST
+    # TODO - MUST SOLVE LP RELAXATION FIRST
     lp_relaxation = Any[]
 
     return VariableNeighborhoodSearch(master_model, master_solution, lp_relaxation, master_var, Any[], Any[], 3600.0)
@@ -94,10 +107,15 @@ end
 
 function solveORDGDP(filename::AbstractString, mip_solver)
 
+    # Read in all the data that we need to solve the problem
     problem_data = problemData(filename)
+    
+    # This creates the variables and constraints associated with the
+    # base case
     ordgdp = ORDGDP(mip_solver, problem_data, 0, true)
-
-    master_ordgdp = generateScenario([], false, Any[], 0, mip_solver)
+        
+    # Testing to see if the master problem solves, with no fixed variables
+    master_ordgdp = generateScenario([], false, Any[], 0, mip_solver, problem_data)
 
     #ScenarioBasedDecomposition_pmap(generateScenario, master_solver, cost, master_model, master_var, numSubProb)
 end
