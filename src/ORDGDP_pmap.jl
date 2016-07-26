@@ -79,15 +79,17 @@ function generateScenario(master_ordgdp, fixVals, master_var, scen_idx, mip_solv
         else
             populateMinimization(curr_ordgdp, problem_data)
         end
+        
         solve(curr_ordgdp.mip_model)
-        for i = 1:length(curr_model.masterVariable)
-            for j = 1:length(curr_model.masterVariable[i])
+        
+        for i = 1:length(curr_ordgdp.masterVariable)
+            for j = 1:length(curr_ordgdp.masterVariable[i])
                 push!(sub_solution, getValue(curr_model.masterVariable[i][j]))
             end
             push!(curr_solution, sub_solution)
         end
 
-        return getObjectiveValue(curr_model), curr_solution
+        return getobjectivevalue(curr_ordgdp.mip_model), curr_solution
     else
         populateVariables(ordgdp, p, scen_idx, false)
         populateConstraints(ordgdp, p, scen_idx, false)
@@ -115,7 +117,10 @@ function solveORDGDP(filename::AbstractString, mip_solver)
     ordgdp = ORDGDP(mip_solver, problem_data, 0, true)
         
     # Testing to see if the master problem solves, with no fixed variables
-    master_ordgdp = generateScenario([], false, Any[], 0, mip_solver, problem_data)
+    master_ordgdp, sol = generateScenario([], false, Any[], 0, mip_solver, problem_data)
 
+    println(sol)
+    println(master_ordgdp) 
+      
     #ScenarioBasedDecomposition_pmap(generateScenario, master_solver, cost, master_model, master_var, numSubProb)
 end

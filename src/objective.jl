@@ -123,11 +123,33 @@ function populateMinimization(ordgdp::ORDGDP, p::problemData)
     end
     
     #TODO, potential bug here, we might be able to turn off the line without a switch here here.
+    #TODO, RBENT need to only post variables for switch cost and line construction cost
+    
+    # JUMP doesn't like Inf in coefficients, so just doing a big number until we fix the above thing
+    LINE_SWITCH_COST = zeros(Float64,length(p.LINE_SWITCH_COST))
+    for j=1:length(p.LINE_SWITCH_COST)
+      if p.LINE_SWITCH_COST[j].data == Inf
+        LINE_SWITCH_COST[j] = 1e10
+      else
+        LINE_SWITCH_COST[j] = p.LINE_SWITCH_COST[j].data
+      end
+    end
+    
+    HARDEN_COST = zeros(Float64,length(p.HARDEN_COST))
+    for j=1:length(p.HARDEN_COST)
+      if p.HARDEN_COST[j].data == Inf
+        HARDEN_COST[j] = 1e10
+      else
+        HARDEN_COST[j] = p.HARDEN_COST[j].data
+      end
+    end
+    
     
     @objective(mip_model, Min, 
         sum{p.LINE_CONSTRUCTION_COST[j].data * lineUseVariable[p.hashTableEdges[p.LINE_CONSTRUCTION_COST[j].id]], j in 1:length(p.LINE_CONSTRUCTION_COST)} +
-        sum{p.LINE_SWITCH_COST[j].data * switchUseVariable[p.hashTableEdges[p.LINE_SWITCH_COST[j].id]], j in 1:length(p.LINE_SWITCH_COST)} +
-        sum{p.HARDEN_COST[j].data * lineHardenVariable[p.hashTableEdges[p.HARDEN_COST[j].id]], j in 1:length(p.HARDEN_COST)} +
-        sum{FACILITY_COST[j] * facilityVariable[j], j in 1:numGenerators})        
+        sum{LINE_SWITCH_COST[j] * switchUseVariable[p.hashTableEdges[p.LINE_SWITCH_COST[j].id]], j in 1:length(p.LINE_SWITCH_COST)} +
+        sum{HARDEN_COST[j] * lineHardenVariable[p.hashTableEdges[p.HARDEN_COST[j].id]], j in 1:length(p.HARDEN_COST)} +
+        sum{FACILITY_COST[j] * facilityVariable[j], j in 1:numGenerators})
+        
 end
 
